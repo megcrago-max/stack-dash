@@ -40,9 +40,29 @@ export class GameScene extends Phaser.Scene {
     super('game');
   }
 
+  private muteTapped = false;
+
   create() {
     this.graphics = this.add.graphics();
     this.bestScore = parseInt(localStorage.getItem('stackdash_best') || '0');
+
+    // Fullscreen interactive hit zone — most reliable click target in Phaser
+    const hitZone = this.add.rectangle(GAME_W / 2, GAME_H / 2, GAME_W, GAME_H, 0x000000, 0)
+      .setScrollFactor(0).setDepth(0).setInteractive();
+    hitZone.on('pointerdown', () => {
+      if (this.muteTapped) { this.muteTapped = false; return; }
+      if (this.gameOver) {
+        this.restartGame();
+        return;
+      }
+      if (this.waitingToStart) {
+        this.startGame();
+        return;
+      }
+      if (this.started) {
+        this.dropBlock();
+      }
+    });
 
     // UI texts — fixed to camera via setScrollFactor(0)
     this.scoreText = this.add.text(GAME_W / 2, 40, '0', {
@@ -62,14 +82,19 @@ export class GameScene extends Phaser.Scene {
 
     this.muteBtn = this.add.text(GAME_W - 15, 15, '🔊', {
       fontSize: '24px',
-    }).setOrigin(1, 0).setScrollFactor(0).setDepth(10).setInteractive();
-    this.muteBtn.on('pointerdown', (e: Phaser.Input.Pointer) => {
-      e.event.stopPropagation();
+    }).setOrigin(1, 0).setScrollFactor(0).setDepth(11).setInteractive();
+    this.muteBtn.on('pointerdown', () => {
+      this.muteTapped = true;
       this.sound_mgr.toggle();
       this.muteBtn.setText(this.sound_mgr.muted ? '🔇' : '🔊');
     });
 
-    this.input.on('pointerdown', () => {
+    // Also bind directly to canvas DOM as fallback
+    this.game.canvas.addEventListener('pointerdown', () => {
+      // This fires after Phaser processes — only used as fallback
+    });
+    this.game.canvas.addEventListener('click', () => {
+      if (this.muteTapped) { this.muteTapped = false; return; }
       if (this.gameOver) {
         this.restartGame();
         return;
