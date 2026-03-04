@@ -12,8 +12,8 @@ export class ColorManager {
   ];
 
   static getBlockColor(level: number): number {
-    const idx = Math.floor(level / 5) % this.palettes.length;
-    const sub = level % 2;
+    const idx = level % this.palettes.length;
+    const sub = Math.floor(level / this.palettes.length) % 2;
     return this.palettes[idx][sub];
   }
 

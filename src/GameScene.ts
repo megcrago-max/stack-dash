@@ -41,6 +41,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private muteTapped = false;
+  private gameOverTime = 0;
 
   create() {
     this.graphics = this.add.graphics();
@@ -52,6 +53,8 @@ export class GameScene extends Phaser.Scene {
     hitZone.on('pointerdown', () => {
       if (this.muteTapped) { this.muteTapped = false; return; }
       if (this.gameOver) {
+        // Prevent accidental restart — require 500ms delay after game over
+        if (Date.now() - this.gameOverTime < 500) return;
         this.restartGame();
         return;
       }
@@ -87,25 +90,6 @@ export class GameScene extends Phaser.Scene {
       this.muteTapped = true;
       this.sound_mgr.toggle();
       this.muteBtn.setText(this.sound_mgr.muted ? '🔇' : '🔊');
-    });
-
-    // Also bind directly to canvas DOM as fallback
-    this.game.canvas.addEventListener('pointerdown', () => {
-      // This fires after Phaser processes — only used as fallback
-    });
-    this.game.canvas.addEventListener('click', () => {
-      if (this.muteTapped) { this.muteTapped = false; return; }
-      if (this.gameOver) {
-        this.restartGame();
-        return;
-      }
-      if (this.waitingToStart) {
-        this.startGame();
-        return;
-      }
-      if (this.started) {
-        this.dropBlock();
-      }
     });
 
     this.waitingToStart = true;
@@ -220,8 +204,8 @@ export class GameScene extends Phaser.Scene {
 
     this.scoreText.setText(String(this.score));
 
-    // Scroll camera up
-    if (dropY < GAME_H / 2) {
+    // Scroll camera up — start scrolling when tower reaches 60% of screen height
+    if (dropY - this.targetCameraY < GAME_H * 0.4) {
       this.targetCameraY += BLOCK_H;
     }
 
@@ -245,6 +229,7 @@ export class GameScene extends Phaser.Scene {
   private triggerGameOver() {
     this.gameOver = true;
     this.started = false;
+    this.gameOverTime = Date.now();
     if (this.score > this.bestScore) {
       this.bestScore = this.score;
       localStorage.setItem('stackdash_best', String(this.bestScore));
