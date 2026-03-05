@@ -65,8 +65,8 @@ export class GameScene extends Phaser.Scene {
         return;
       }
       if (this.started) {
-        // 300ms after game start before first drop allowed (block needs to be visible)
-        if (now - this.gameStartTime < 300) return;
+        // 800ms after game start before first drop allowed
+        if (now - this.gameStartTime < 800) return;
         // 100ms minimum between drops to prevent double-fire
         if (now - this.lastDropTime < 100) return;
         this.lastDropTime = now;
@@ -156,8 +156,11 @@ export class GameScene extends Phaser.Scene {
   private spawnMovingBlock() {
     const top = this.stack[this.stack.length - 1];
     const speed = BASE_SPEED + Math.floor(this.level / 10) * 0.8;
+    // First block starts centered over the base for a fair first drop
+    // Subsequent blocks start from the left edge
+    const startX = this.level === 0 ? top.x : -top.w;
     this.movingBlock = {
-      x: -top.w,
+      x: startX,
       w: top.w,
       dir: 1,
       speed,
