@@ -47,13 +47,10 @@ export class GameScene extends Phaser.Scene {
     this.graphics = this.add.graphics();
     this.bestScore = parseInt(localStorage.getItem('stackdash_best') || '0');
 
-    // Fullscreen interactive hit zone — most reliable click target in Phaser
-    const hitZone = this.add.rectangle(GAME_W / 2, GAME_H / 2, GAME_W, GAME_H, 0x000000, 0)
-      .setScrollFactor(0).setDepth(0).setInteractive();
-    hitZone.on('pointerdown', () => {
+    // Single DOM-level input handler — most reliable across all browsers
+    const handleTap = () => {
       if (this.muteTapped) { this.muteTapped = false; return; }
       if (this.gameOver) {
-        // Prevent accidental restart — require 500ms delay after game over
         if (Date.now() - this.gameOverTime < 500) return;
         this.restartGame();
         return;
@@ -65,7 +62,13 @@ export class GameScene extends Phaser.Scene {
       if (this.started) {
         this.dropBlock();
       }
-    });
+    };
+    // Use mousedown (fires on press, not release — feels snappier for games)
+    this.game.canvas.addEventListener('mousedown', handleTap);
+    this.game.canvas.addEventListener('touchstart', (e) => {
+      e.preventDefault(); // prevent double-fire from touch→mouse emulation
+      handleTap();
+    }, { passive: false });
 
     // UI texts — fixed to camera via setScrollFactor(0)
     this.scoreText = this.add.text(GAME_W / 2, 40, '0', {
@@ -85,12 +88,27 @@ export class GameScene extends Phaser.Scene {
 
     this.muteBtn = this.add.text(GAME_W - 15, 15, '🔊', {
       fontSize: '24px',
-    }).setOrigin(1, 0).setScrollFactor(0).setDepth(11).setInteractive();
-    this.muteBtn.on('pointerdown', () => {
-      this.muteTapped = true;
-      this.sound_mgr.toggle();
-      this.muteBtn.setText(this.sound_mgr.muted ? '🔇' : '🔊');
-    });
+    }).setOrigin(1, 0).setScrollFactor(0).setDepth(11);
+
+    // Mute detection via canvas click coordinates
+    const checkMute = (clientX: number, clientY: number) => {
+      const canvas = this.game.canvas;
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = GAME_W / rect.width;
+      const scaleY = GAME_H / rect.height;
+      const gx = (clientX - rect.left) * scaleX;
+      const gy = (clientY - rect.top) * scaleY;
+      // Mute button area (top-right corner, ~50x40px)
+      if (gx > GAME_W - 60 && gy < 50) {
+        this.muteTapped = true;
+        this.sound_mgr.toggle();
+        this.muteBtn.setText(this.sound_mgr.muted ? '🔇' : '🔊');
+      }
+    };
+    this.game.canvas.addEventListener('mousedown', (e) => checkMute(e.clientX, e.clientY), true);
+    this.game.canvas.addEventListener('touchstart', (e) => {
+      if (e.touches.length > 0) checkMute(e.touches[0].clientX, e.touches[0].clientY);
+    }, true);
 
     this.waitingToStart = true;
   }
