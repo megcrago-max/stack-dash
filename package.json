@@ -13,6 +13,8 @@
     "vite": "^7.3.1"
   },
   "dependencies": {
-    "phaser": "^3.90.0"
+    "@types/three": "^0.183.1",
+    "phaser": "^3.90.0",
+    "three": "^0.183.2"
   }
 }
