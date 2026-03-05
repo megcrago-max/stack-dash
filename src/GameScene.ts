@@ -44,6 +44,7 @@ export class GameScene extends Phaser.Scene {
   private gameOverTime = 0;
   private gameStartTime = 0;
   private lastDropTime = 0;
+  private inputLocked = false;
 
   create() {
     this.graphics = this.add.graphics();
@@ -52,10 +53,10 @@ export class GameScene extends Phaser.Scene {
     // Single DOM-level input handler — most reliable across all browsers
     const handleTap = () => {
       if (this.muteTapped) { this.muteTapped = false; return; }
+      if (this.inputLocked) return;
       const now = Date.now();
       if (this.gameOver) {
-        // 800ms cooldown after game over before accepting restart
-        if (now - this.gameOverTime < 800) return;
+        if (now - this.gameOverTime < 1200) return;
         this.restartGame();
         return;
       }
@@ -259,6 +260,9 @@ export class GameScene extends Phaser.Scene {
     this.gameOver = true;
     this.started = false;
     this.gameOverTime = Date.now();
+    // Hard lock ALL input for 1.2s — no taps processed at all
+    this.inputLocked = true;
+    this.time.delayedCall(1200, () => { this.inputLocked = false; });
     if (this.score > this.bestScore) {
       this.bestScore = this.score;
       localStorage.setItem('stackdash_best', String(this.bestScore));
