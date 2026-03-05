@@ -42,6 +42,8 @@ export class GameScene extends Phaser.Scene {
 
   private muteTapped = false;
   private gameOverTime = 0;
+  private gameStartTime = 0;
+  private lastDropTime = 0;
 
   create() {
     this.graphics = this.add.graphics();
@@ -50,8 +52,10 @@ export class GameScene extends Phaser.Scene {
     // Single DOM-level input handler — most reliable across all browsers
     const handleTap = () => {
       if (this.muteTapped) { this.muteTapped = false; return; }
+      const now = Date.now();
       if (this.gameOver) {
-        if (Date.now() - this.gameOverTime < 500) return;
+        // 800ms cooldown after game over before accepting restart
+        if (now - this.gameOverTime < 800) return;
         this.restartGame();
         return;
       }
@@ -60,6 +64,11 @@ export class GameScene extends Phaser.Scene {
         return;
       }
       if (this.started) {
+        // 300ms after game start before first drop allowed (block needs to be visible)
+        if (now - this.gameStartTime < 300) return;
+        // 100ms minimum between drops to prevent double-fire
+        if (now - this.lastDropTime < 100) return;
+        this.lastDropTime = now;
         this.dropBlock();
       }
     };
@@ -86,8 +95,8 @@ export class GameScene extends Phaser.Scene {
       fontStyle: 'bold', stroke: '#000000', strokeThickness: 3, align: 'center',
     }).setOrigin(0.5).setScrollFactor(0).setDepth(10);
 
-    this.muteBtn = this.add.text(GAME_W - 15, 15, '🔊', {
-      fontSize: '24px',
+    this.muteBtn = this.add.text(GAME_W - 12, 12, '🔊', {
+      fontSize: '32px',
     }).setOrigin(1, 0).setScrollFactor(0).setDepth(11);
 
     // Mute detection via canvas click coordinates
@@ -117,6 +126,8 @@ export class GameScene extends Phaser.Scene {
     this.waitingToStart = false;
     this.started = true;
     this.gameOver = false;
+    this.gameStartTime = Date.now();
+    this.lastDropTime = 0;
     this.level = 0;
     this.score = 0;
     this.combo = 0;
@@ -301,9 +312,8 @@ export class GameScene extends Phaser.Scene {
     const g = this.graphics;
     g.clear();
 
-    // Background gradient
-    const bg = ColorManager.getBgGradient(this.level);
-    g.fillStyle(Phaser.Display.Color.HexStringToColor(bg.bottom).color);
+    // Background color shifts with altitude
+    g.fillStyle(ColorManager.getBgColor(this.level));
     g.fillRect(0, -this.cameraY - 1000, GAME_W, GAME_H + 2000);
 
     // Draw stack

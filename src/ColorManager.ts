@@ -17,17 +17,12 @@ export class ColorManager {
     return this.palettes[idx][sub];
   }
 
-  static getBgGradient(level: number): { top: string; bottom: string } {
-    const t = Math.min(level / 50, 1);
-    const r1 = Math.round(26 + t * (10 - 26));
-    const g1 = Math.round(26 + t * (10 - 26));
-    const b1 = Math.round(46 + t * (60 - 46));
-    const r2 = Math.round(40 + t * (20 - 40));
-    const g2 = Math.round(40 + t * (15 - 40));
-    const b2 = Math.round(60 + t * (80 - 60));
-    return {
-      top: `rgb(${r1},${g1},${b1})`,
-      bottom: `rgb(${r2},${g2},${b2})`,
-    };
+  static getBgColor(level: number): number {
+    // Subtle but visible background shift: dark navy → deep purple → dark teal
+    const t = Math.min(level / 30, 1);
+    const r = Math.round(15 + t * 25);
+    const g = Math.round(15 + t * 10);
+    const b = Math.round(35 + t * 40);
+    return (r << 16) | (g << 8) | b;
   }
 }
